@@ -26,11 +26,11 @@ export function BrandLogo({ lang, href, className, ...props }: ComponentPropsWit
   </a>;
 }
 
-export type ToolName = 'emdrdot' | 'breaze';
+export type ToolName = 'emdrdot' | 'breaze' | 'underground';
 
 export function ToolLogo({ name, className }: { name: ToolName; className?: string }) {
-  return <span className={classes('brand tool-logo', className)} role="img" aria-label={name === 'emdrdot' ? 'EMDR Dot' : 'Breaze'}>
-    {name === 'emdrdot' ? <><span className="brand-mark" aria-hidden="true"><i/><i/><i/></span><span aria-hidden="true">emdr<span className="brand-dot">dot</span></span></> : <><svg className="brand-mark breaze-mark" width="26" height="26" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M3 11h17c6 0 6-8 1-8-3 0-4 2-4 3"/><path d="M3 16h23c5 0 5 7 1 7" opacity=".65"/><path d="M3 21h10c6 0 6 8 1 8-2 0-3-1-3-2" opacity=".4"/></svg><span aria-hidden="true">breaze</span></>}
+  return <span className={classes('brand tool-logo', className)} role="img" aria-label={name === 'emdrdot' ? 'EMDR Dot' : name === 'underground' ? 'Underground' : 'Breaze'}>
+    {name === 'underground' ? <><svg className="brand-mark underground-mark" width="28" height="30" viewBox="0 0 56 62" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" aria-hidden="true"><path d="M6 25Q28 41 50 25"/><path d="M11 38Q28 50 45 38" opacity=".6"/><path d="M17 51Q28 58 39 51" opacity=".32"/><path d="M28 4v20m-7-7 7 7 7-7"/></svg><span aria-hidden="true"><span className="underground-prefix">under</span>ground</span></> : name === 'emdrdot' ? <><span className="brand-mark" aria-hidden="true"><i/><i/><i/></span><span aria-hidden="true">emdr<span className="brand-dot">dot</span></span></> : <><svg className="brand-mark breaze-mark" width="26" height="26" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M3 11h17c6 0 6-8 1-8-3 0-4 2-4 3"/><path d="M3 16h23c5 0 5 7 1 7" opacity=".65"/><path d="M3 21h10c6 0 6 8 1 8-2 0-3-1-3-2" opacity=".4"/></svg><span aria-hidden="true">breaze</span></>}
   </span>;
 }
 
