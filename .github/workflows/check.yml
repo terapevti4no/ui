@@ -1,18 +1,41 @@
-name: Check UI updater
+name: Check and release UI
 on:
   push:
     branches: [main]
-    tags: ['v*']
   pull_request:
     branches: [main]
+  workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: ui-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
-  test:
+  check:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: npm
+      - run: npm ci
       - run: npm run check
+      - name: Pack React library
+        run: npm pack --json > pack.json
+      - name: Publish versioned npm archive
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          version=$(node -p "JSON.parse(require('fs').readFileSync('package.json','utf8')).version")
+          tag="v$version"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "Release $tag already exists; bump package.json to release changes."
+            exit 0
+          fi
+          archive=$(node -p "JSON.parse(require('fs').readFileSync('pack.json','utf8'))[0].filename")
+          gh release create "$tag" "$archive" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "UI $tag" --generate-notes

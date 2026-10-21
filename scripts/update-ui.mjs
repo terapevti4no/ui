@@ -1,92 +1,60 @@
-import { readFile, mkdir, writeFile } from 'node:fs/promises';
-import { createHash } from 'node:crypto';
+#!/usr/bin/env node
+import { readFile, appendFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
-export const repository = 'terapevti4no/ui';
+const repository = 'terapevti4no/ui';
 const packageName = '@terapevti4no/ui';
-const hash = bytes => createHash('sha256').update(bytes).digest('hex');
+const exactVersion = /^\d+\.\d+\.\d+$/;
+const compare = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number); for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] - y[i]; return 0; };
 
-async function download(url, fetcher) {
-  const response = await fetcher(url, { headers: { Accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(30000) });
-  if (!response.ok) throw new Error(`Download failed (${response.status}): ${url}`);
-  return response;
+export async function resolveRelease({ version, latest = false, fetcher = fetch }) {
+  if ((!latest && !exactVersion.test(version ?? '')) || (latest && version)) throw new Error('Use --latest or one exact --version X.Y.Z.');
+  const headers = { Accept: 'application/vnd.github+json' };
+  if (process.env.GH_TOKEN) headers.Authorization = `Bearer ${process.env.GH_TOKEN}`;
+  const response = await fetcher(`https://api.github.com/repos/${repository}/releases/${latest ? 'latest' : `tags/v${version}`}`, { headers, signal: AbortSignal.timeout(30000) });
+  if (!response.ok) throw new Error(`Cannot read UI release (${response.status}). No dependencies were changed.`);
+  const release = await response.json();
+  const publishedVersion = release.tag_name?.replace(/^v/, '');
+  if (!exactVersion.test(publishedVersion ?? '') || release.draft || release.prerelease || (!latest && version !== publishedVersion)) throw new Error('Invalid or mismatched stable UI release.');
+  const filename = `terapevti4no-ui-${publishedVersion}.tgz`;
+  const expectedUrl = `https://github.com/${repository}/releases/download/v${publishedVersion}/${filename}`;
+  const asset = release.assets?.find(asset => asset.name === filename);
+  if (!asset || asset.browser_download_url !== expectedUrl) throw new Error('The UI release has no valid npm package asset.');
+  return { version: publishedVersion, url: expectedUrl };
 }
 
-export async function updateUI({ version, projects = ['.'], check = false, fetcher = fetch }) {
-  if (!/^\d+\.\d+\.\d+(?:-[\da-zA-Z.-]+)?$/.test(version ?? '')) throw new Error('Specify an exact version, e.g. --version 0.1.0.');
-  if (!projects.length) throw new Error('Specify at least one project directory.');
-  // Resolve the release tag once; all subsequent requests use its immutable commit.
-  const ref = `v${version}`;
-  const release = await (await download(`https://api.github.com/repos/${repository}/commits/${ref}`, fetcher)).json();
-  if (!/^[a-f0-9]{40}$/.test(release.sha ?? '')) throw new Error('GitHub returned an invalid commit.');
-  const base = `https://raw.githubusercontent.com/${repository}/${release.sha}`;
-  const [packageResponse, cssResponse] = await Promise.all([
-    download(`${base}/package.json`, fetcher),
-    download(`${base}/styles/ui.css`, fetcher),
-  ]);
-  const pkg = await packageResponse.json();
-  if (pkg.name !== packageName || pkg.version !== version) throw new Error('The tagged package does not match the requested UI version.');
-  const css = Buffer.from(await cssResponse.arrayBuffer());
-  if (!css.length) throw new Error('The downloaded stylesheet is empty.');
-  const assetPaths = pkg.uiAssets ?? [];
-  if (!Array.isArray(assetPaths) || assetPaths.some(asset => typeof asset !== 'string' || !/^assets\/[a-zA-Z0-9_-]+\.svg$/.test(asset))) throw new Error('Invalid UI asset paths.');
-  const assets = await Promise.all(assetPaths.map(async asset => {
-    const response = await download(`${base}/${asset}`, fetcher);
-    const bytes = Buffer.from(await response.arrayBuffer());
-    if (!bytes.length) throw new Error(`The downloaded asset is empty: ${asset}`);
-    return { path: asset, bytes };
-  }));
-  const metadata = JSON.stringify({ package: packageName, repository, version, ref, commit: release.sha, sha256: hash(css),
-    ...(assets.length ? { assets: Object.fromEntries(assets.map(asset => [asset.path, hash(asset.bytes)])) } : {}),
-  }, null, 2) + '\n';
-  // Check every destination before modifying any of them.
-  const destinations = [];
-  for (const project of projects) {
-    const root = path.resolve(project);
-    await readFile(path.join(root, 'index.html'));
-    destinations.push(path.join(root, 'vendor/terapevti4no-ui'));
+export async function updateUI({ root = process.cwd(), version, latest = false, check = false, fetcher = fetch, install = (spec, cwd) => execFileSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['install', '--save-exact', spec], { cwd, stdio: 'inherit' }) } = {}) {
+  const pkg = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
+  if (pkg.name === packageName) throw new Error('Run the updater in a consumer project, not in the UI repository.');
+  const release = await resolveRelease({ version, latest, fetcher });
+  const current = pkg.dependencies?.[packageName];
+  const currentVersion = current?.match(/\/releases\/download\/v(\d+\.\d+\.\d+)\//)?.[1];
+  if (current === release.url || (latest && currentVersion && compare(currentVersion, release.version) > 0)) {
+    console.log(`UI is up to date (${currentVersion ?? release.version}).`);
+    return { changed: false, version: currentVersion ?? release.version };
   }
   if (check) {
-    for (const dest of destinations) {
-      const [actualCss, actualMetadata] = await Promise.all([
-        readFile(path.join(dest, 'ui.css')),
-        readFile(path.join(dest, 'version.json'), 'utf8'),
-      ]);
-      if (!actualCss.equals(css) || actualMetadata !== metadata) throw new Error(`UI files differ in ${dest}; run the updater without --check.`);
-      for (const asset of assets) {
-        if (!(await readFile(path.join(dest, asset.path))).equals(asset.bytes)) throw new Error(`UI asset differs: ${asset.path}`);
-      }
-      console.log(`OK ${dest} (${ref}, ${release.sha.slice(0, 7)})`);
-    }
-  } else {
-    for (const dest of destinations) {
-      await mkdir(dest, { recursive: true });
-      await writeFile(path.join(dest, 'ui.css'), css);
-      for (const asset of assets) {
-        const file = path.join(dest, asset.path);
-        await mkdir(path.dirname(file), { recursive: true });
-        await writeFile(file, asset.bytes);
-      }
-      await writeFile(path.join(dest, 'version.json'), metadata);
-      console.log(`Updated ${dest} (${ref}, ${release.sha.slice(0, 7)})`);
-    }
+    console.log(`UI ${release.version} is available. Run npm run ui:update to install it.`);
+    return { changed: false, available: true, version: release.version };
   }
+  install(`${packageName}@${release.url}`, root);
+  console.log(`Installed UI ${release.version}. Review package.json and package-lock.json before committing.`);
+  return { changed: true, version: release.version };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const args = process.argv.slice(2);
-    const check = args.includes('--check');
+    const latest = args.includes('--latest') || !args.includes('--version'), check = args.includes('--check');
+    if (args.includes('--latest')) args.splice(args.indexOf('--latest'), 1);
     if (check) args.splice(args.indexOf('--check'), 1);
+    let version;
     const flag = args.indexOf('--version');
-    if (flag < 0 || !args[flag + 1]) throw new Error('Usage: node scripts/update-ui.mjs [--check] --version 0.1.0 [project ...]');
-    const version = args[flag + 1];
-    args.splice(flag, 2);
-    if (args.some(arg => arg.startsWith('--'))) throw new Error('Unknown option.');
-    await updateUI({ version, projects: args.length ? args : ['.'], check });
-  } catch (error) {
-    console.error(error.message);
-    process.exitCode = 1;
-  }
+    if (flag >= 0) { version = args[flag + 1]; args.splice(flag, 2); }
+    if (args.length) throw new Error('Usage: terapevti4no-ui (--latest | --version X.Y.Z) [--check]');
+    const result = await updateUI({ latest, version, check });
+    if (process.env.GITHUB_OUTPUT) await appendFile(process.env.GITHUB_OUTPUT, `changed=${result.changed}\nversion=${result.version}\n`);
+  } catch (error) { console.error(error.message); process.exitCode = 1; }
 }

@@ -1,65 +1,84 @@
 # @terapevti4no/ui
 
-Shared CSS for the [tool directory](https://github.com/terapevti4no/terapevti4no.github.io) and [EMDR Dot](https://github.com/terapevti4no/emdrdot). No framework or CSS build step is required.
+Shared React components, CSS and brand assets for [terapevti4no](https://github.com/terapevti4no/terapevti4no.github.io) and [EMDR Dot](https://github.com/terapevti4no/emdrdot).
 
-## Shared components
+## Install
 
-Manrope font, light/dark tokens, base styles, header, language/theme controls, wordmarks, intro, responsive main layout (`ui-main`), card surface and padding (`ui-card`), notes (`ui-note`), footer and safe-area spacing. Tool-specific layouts, timer controls, content and behavior stay in the applications.
-
-Load `styles/ui.css` before application CSS. Set `data-theme="light"` or `data-theme="dark"` on the document root. The EMDR wordmark uses `.brand`, a `.brand-mark` containing three `i` elements, followed by `emdr` and a `.brand-dot` containing `dot`.
-
-## Update a project from GitHub
-
-Each consumer includes `scripts/update-ui.mjs`. From that project's root, with Node 22 or newer:
+The package is distributed as a normal npm archive in GitHub Releases; an npm registry account or npm authentication is not required:
 
 ```sh
-node scripts/update-ui.mjs --version 0.1.1
-node scripts/update-ui.mjs --check --version 0.1.1
+npm install --save-exact @terapevti4no/ui@https://github.com/terapevti4no/ui/releases/download/v0.2.0/terapevti4no-ui-0.2.0.tgz
 ```
 
-No sibling UI checkout or npm install is needed. The updater resolves `terapevti4no/ui` tag `v0.1.1` to a commit and downloads the package metadata, CSS and declared SVG assets from that exact commit. It validates the package name/version before writing `vendor/terapevti4no-ui/ui.css` and `version.json`. The manifest records the repository, version, tag, commit and SHA-256 checksums for the CSS and SVG assets. `--check` verifies the copy against GitHub without modifying files. An unavailable release or mismatched package fails before writing files. GitHub's unauthenticated API rate limits apply.
+React is a peer dependency, so the package shares the application's React instance. Commit both `package.json` and `package-lock.json`. There is no vendor directory and no runtime request to GitHub: Vite bundles the installed package into the site.
 
-Keep the vendor directory in Git; do not edit it directly. Sites serve this local copy, so they build and run without contacting the UI repository. Only the explicit updater needs GitHub access. Commit consumer updates after checking the result.
+## Components
 
-From this UI checkout, update both projects in one command:
+- `BrandLogo`: localized parent brand linked to the home page.
+- `ToolLogo`: EMDR Dot wordmark; only this wordmark uses the three dots.
+- `Header`, `ThemeToggle`, `LanguageSwitch`: shared controls and optional parent/tool branding.
+- `PageIntro`: eyebrow, title, description; no decorative divider or dots.
+- `Container`: responsive, narrow or wide content width.
+- `PageLayout`: header, main content container and optional footer.
+- `InfoNote`, `Footer`, `Icon`: common informational text, footer and icons.
 
-```sh
-node scripts/update-ui.mjs --version 0.1.1 ../terapevti4no.github.io ../emdrdot
+```tsx
+import { PageLayout, PageIntro, InfoNote, Footer, usePreferences } from '@terapevti4no/ui';
+import '@terapevti4no/ui/styles.css';
+
+function Page() {
+  const { lang, setLang, theme, setTheme } = usePreferences({
+    storageKey: 'my-tool:v1', fallbackKeys: ['terapevti4no:v1'],
+  });
+  return <PageLayout lang={lang} theme={theme}
+    onLanguageChange={setLang} onThemeChange={setTheme}
+    homeHref="https://terapevti4no.github.io/"
+    footer={<Footer brand="MY TOOL">Footer text</Footer>}>
+    <PageIntro eyebrow="AT YOUR OWN PACE" title="Practice" description="Choose your settings." />
+    <InfoNote>Information about this tool.</InfoNote>
+  </PageLayout>;
+}
 ```
+
+For EMDR Dot, pass `tool="emdrdot"` to `PageLayout`. App-specific catalog cards, timer controls, translations and practice behavior belong to their applications.
+
+## Vite integration
+
+Use `resolve: { dedupe: ['react', 'react-dom'] }` and `optimizeDeps: { exclude: ['@terapevti4no/ui'] }`. Excluding the library from dependency prebundling preserves its asset-relative SVG URLs during development; production builds emit the shared logo as a normal asset.
+
+Import `preferenceBootstrap` from `@terapevti4no/ui/preferences` in `vite.config.ts` and inject its return value as a head script through `transformIndexHtml`. Both existing sites demonstrate this setup. It applies saved theme/language before first paint. `usePreferences` reads the same legacy storage records and merges its fields when saving, preserving tool-specific settings. Storage failures do not block the UI. The package also exports `faviconUrl` for the application's icon link.
 
 ## Develop and release
 
-1. Edit `styles/ui.css`, bump `package.json` version and the stylesheet version comment.
-2. Preview by copying the stylesheet into each local project's vendor directory. These are temporary development copies; the updater will restore release provenance after publication.
-3. Run `npm test` in this repository. Check both sites in Russian/English, light/dark themes and desktop/mobile layouts; run `npm test` and `npm run build` in EMDR Dot.
-4. Commit the UI changes, create tag `vX.Y.Z` and push the commit and tag. Published version tags must never be moved; corrections get a new version.
-5. Run each consumer's updater with the new exact version, review the CSS and manifest changes, then commit and push the consumer updates.
-
-To roll back, run the updater with an earlier published version, check both sites and commit the resulting vendor files. `0.x` releases are provisional: review the CSS diff before updating.
-
-## Tests
+Requires Node 22+ (CI uses Node 24):
 
 ```sh
-npm test
-```
-
-Uses Node's built-in test runner; no dependencies or network requests. Covers pinned-commit downloads, vendor drift detection, invalid versions, unavailable tags, mismatched package metadata and destination validation.
-
-## Brand artwork
-
-Edit the source symbol only in `assets/terapevti4no.svg`. Both applications reference its `#mark` symbol through an external SVG `use`, so `currentColor` follows the selected theme. `assets/terapevti4no-favicon.svg` is generated from that source with the favicon background and colors; do not edit it by hand.
-
-```sh
-npm run build:assets
+npm ci
 npm run check
+npm pack
 ```
 
-`package.json` declares `uiAssets`; the updater downloads them alongside the stylesheet and checks their hashes. Logo consumers need UI 0.1.1 or newer. Example static header:
+`check` compiles JavaScript and TypeScript declarations, generates/checks the favicon, and runs component, preferences and updater tests. For a local preview, install the resulting `.tgz` in a consumer; replace that temporary file dependency with the published URL before committing the consumer.
 
-```html
-<svg class="brand-mark" width="34" height="34" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-  <use href="./vendor/terapevti4no-ui/assets/terapevti4no.svg#mark" />
-</svg>
+1. Change components, styles or assets and bump `package.json` version. Keep the stylesheet version comment aligned.
+2. Run `npm run check` and check both sites in both languages/themes and on mobile.
+3. Commit and push to `main`. The workflow builds/tests the package and automatically creates tag/release `vX.Y.Z` with `terapevti4no-ui-X.Y.Z.tgz`. An existing release is never overwritten; a new version is required to publish new changes.
+4. Consumer workflows check for stable releases four times an hour, install a newer package, run their checks/build, commit the verified lockfile update, then deploy in the same workflow. GitHub may delay scheduled runs. No cross-repository secret or personal token is required.
+
+For an immediate update, run the consumer's **Build and deploy** workflow manually. To stop scheduled updates, set the consumer repository variable `UI_AUTO_UPDATE=false`. Pushes and manual runs still build/deploy normally. To hold a rollback, disable scheduled updates and use an explicit earlier compatible version.
+
+## Consumer commands
+
+The package installs the `terapevti4no-ui` CLI. Consumers expose it through `ui:update` and `ui:check`:
+
+```sh
+npm run ui:check
+npm run ui:update -- --latest
+npm run ui:update -- --version 0.2.0
 ```
 
-Vite consumers use an external asset URL with `?no-inline` so the SVG fragment remains addressable in production.
+The updater accepts only stable releases from this repository and the expected npm asset URL. npm records archive integrity in `package-lock.json`. Automatic updates do not downgrade a pinned newer version. Local updates are not committed automatically; CI commits only after successful validation.
+
+## Brand source
+
+Edit `assets/terapevti4no.svg`. `npm run build:assets` derives the favicon from that same source. Do not duplicate the SVG paths in applications or edit the generated favicon by hand. Releases before 0.2.0 were CSS-only and cannot replace the React package.
