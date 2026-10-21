@@ -5,8 +5,8 @@ export * from './preferences.js';
 const brandLogoUrl = new URL('../assets/terapevti4no.svg?no-inline', import.meta.url).href;
 export const faviconUrl = new URL('../assets/terapevti4no-favicon.svg?no-inline', import.meta.url).href;
 const labels = {
-  ru: { brand: 'терапевтично', language: 'Язык', dark: 'Тёмная тема', light: 'Светлая тема' },
-  en: { brand: 'terapevti4no', language: 'Language', dark: 'Dark theme', light: 'Light theme' },
+  ru: { brand: 'терапевтично', allTools: 'Все инструменты', language: 'Язык', dark: 'Тёмная тема', light: 'Светлая тема' },
+  en: { brand: 'terapevti4no', allTools: 'All tools', language: 'Language', dark: 'Dark theme', light: 'Light theme' },
 };
 const classes = (...values: (string | undefined | false)[]) => values.filter(Boolean).join(' ');
 
@@ -49,7 +49,7 @@ type HeaderProps = { lang: Lang; theme: Theme; onLanguageChange: (lang: Lang) =>
 export function Header({ lang, theme, onLanguageChange, onThemeChange, homeHref = '/', tool, toolHref = './' }: HeaderProps) {
   return <header className={classes('header', !!tool && 'header-with-tool')}>
     <div className="brand-pair"><BrandLogo lang={lang} href={homeHref}/>{tool && <><span className="brand-separator" aria-hidden="true"/><a href={toolHref}><ToolLogo name={tool}/></a></>}</div>
-    <div className="preferences"><LanguageSwitch lang={lang} onChange={onLanguageChange}/><span className="divider" aria-hidden="true"/><ThemeToggle lang={lang} theme={theme} onChange={onThemeChange}/></div>
+    <div className="preferences">{tool && <a className="all-tools-link" href={homeHref} aria-label={labels[lang].allTools} title={labels[lang].allTools}><Icon name="arrow"/><span>{labels[lang].allTools}</span></a>}<LanguageSwitch lang={lang} onChange={onLanguageChange}/><span className="divider" aria-hidden="true"/><ThemeToggle lang={lang} theme={theme} onChange={onThemeChange}/></div>
   </header>;
 }
 

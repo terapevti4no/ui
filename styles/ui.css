@@ -352,3 +352,7 @@ button:focus-visible,a:focus-visible,input:focus-visible { outline:3px solid var
 }
 
 .breaze-mark{color:var(--accent);flex-shrink:0}
+
+.all-tools-link{display:inline-flex;align-items:center;gap:7px;color:var(--muted);font-size:11px;white-space:nowrap;padding:8px 0;margin-right:12px}
+.all-tools-link svg{transform:rotate(180deg);flex-shrink:0}.all-tools-link:hover{color:var(--accent)}
+@media(max-width:900px){.all-tools-link{margin-right:4px}.all-tools-link span{display:none}.all-tools-link{padding:8px}}
