@@ -350,3 +350,5 @@ button:focus-visible,a:focus-visible,input:focus-visible { outline:3px solid var
   .header-with-tool .brand-pair{gap:9px}
   .header-with-tool .terapevti4no-brand svg{width:24px;height:24px}
 }
+
+.breaze-mark{color:var(--accent);flex-shrink:0}
