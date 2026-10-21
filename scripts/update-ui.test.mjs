@@ -1,6 +1,8 @@
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, writeFile, rm, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { resolveRelease, updateUI } from './update-ui.mjs';
@@ -47,4 +49,16 @@ test('check mode and unavailable releases do not invoke installation', async t =
   assert.equal(result.available, true);
   assert.equal(result.changed, false);
   await assert.rejects(updateUI({ root, latest: true, fetcher: async () => new Response('', { status: 404 }), install }), /404/);
+});
+
+
+test('npm bin symlink executes the CLI instead of silently returning', async t => {
+  const root = await fixture(t);
+  const link = path.join(root, 'terapevti4no-ui');
+  await symlink(fileURLToPath(new URL('./update-ui.mjs', import.meta.url)), link);
+  assert.throws(() => execFileSync(process.execPath, [link, '--unknown-option'], { encoding: 'utf8', stdio: 'pipe' }), error => {
+    assert.equal(error.status, 1);
+    assert.match(error.stderr, /Usage:/);
+    return true;
+  });
 });

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { realpathSync } from 'node:fs';
 import { readFile, appendFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -44,7 +45,7 @@ export async function updateUI({ root = process.cwd(), version, latest = false, 
   return { changed: true, version: release.version };
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))) {
   try {
     const args = process.argv.slice(2);
     const latest = args.includes('--latest') || !args.includes('--version'), check = args.includes('--check');

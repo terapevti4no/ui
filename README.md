@@ -7,7 +7,7 @@ Shared React components, CSS and brand assets for [terapevti4no](https://github.
 The package is distributed as a normal npm archive in GitHub Releases; an npm registry account or npm authentication is not required:
 
 ```sh
-npm install --save-exact @terapevti4no/ui@https://github.com/terapevti4no/ui/releases/download/v0.2.0/terapevti4no-ui-0.2.0.tgz
+npm install --save-exact @terapevti4no/ui@https://github.com/terapevti4no/ui/releases/download/v0.2.1/terapevti4no-ui-0.2.1.tgz
 ```
 
 React is a peer dependency, so the package shares the application's React instance. Commit both `package.json` and `package-lock.json`. There is no vendor directory and no runtime request to GitHub: Vite bundles the installed package into the site.
@@ -74,7 +74,7 @@ The package installs the `terapevti4no-ui` CLI. Consumers expose it through `ui:
 ```sh
 npm run ui:check
 npm run ui:update -- --latest
-npm run ui:update -- --version 0.2.0
+npm run ui:update -- --version 0.2.1
 ```
 
 The updater accepts only stable releases from this repository and the expected npm asset URL. npm records archive integrity in `package-lock.json`. Automatic updates do not downgrade a pinned newer version. Local updates are not committed automatically; CI commits only after successful validation.

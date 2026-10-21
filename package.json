@@ -1,26 +1,41 @@
 {
   "name": "@terapevti4no/ui",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Shared React components, styles and assets for terapevti4no tools",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
-    "./preferences": { "types": "./dist/preferences.d.ts", "import": "./dist/preferences.js" },
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./preferences": {
+      "types": "./dist/preferences.d.ts",
+      "import": "./dist/preferences.js"
+    },
     "./styles.css": "./styles/ui.css",
     "./logo.svg": "./assets/terapevti4no.svg",
     "./favicon.svg": "./assets/terapevti4no-favicon.svg"
   },
-  "bin": { "terapevti4no-ui": "scripts/update-ui.mjs" },
-  "files": ["dist/", "styles/", "assets/", "scripts/update-ui.mjs"],
+  "bin": {
+    "terapevti4no-ui": "scripts/update-ui.mjs"
+  },
+  "files": [
+    "dist/",
+    "styles/",
+    "assets/",
+    "scripts/update-ui.mjs"
+  ],
   "scripts": {
     "build:assets": "node scripts/build-assets.mjs",
     "build": "npm run build:assets && tsc -p tsconfig.json",
     "test": "node --test scripts/*.test.mjs",
     "check": "npm run build && node scripts/build-assets.mjs --check && npm test"
   },
-  "peerDependencies": { "react": "^18.2.0 || ^19.0.0" },
+  "peerDependencies": {
+    "react": "^18.2.0 || ^19.0.0"
+  },
   "devDependencies": {
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
@@ -28,5 +43,8 @@
     "react-dom": "^19.2.0",
     "typescript": "~5.9.3"
   },
-  "repository": { "type": "git", "url": "https://github.com/terapevti4no/ui.git" }
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/terapevti4no/ui.git"
+  }
 }
