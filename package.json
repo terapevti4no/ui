@@ -1,6 +1,6 @@
 {
   "name": "@terapevti4no/ui",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Shared React components, styles and assets for terapevti4no tools",
   "type": "module",
   "main": "./dist/index.js",
