@@ -29,7 +29,17 @@ export async function updateUI({ version, projects = ['.'], check = false, fetch
   if (pkg.name !== packageName || pkg.version !== version) throw new Error('The tagged package does not match the requested UI version.');
   const css = Buffer.from(await cssResponse.arrayBuffer());
   if (!css.length) throw new Error('The downloaded stylesheet is empty.');
-  const metadata = JSON.stringify({ package: packageName, repository, version, ref, commit: release.sha, sha256: hash(css) }, null, 2) + '\n';
+  const assetPaths = pkg.uiAssets ?? [];
+  if (!Array.isArray(assetPaths) || assetPaths.some(asset => typeof asset !== 'string' || !/^assets\/[a-zA-Z0-9_-]+\.svg$/.test(asset))) throw new Error('Invalid UI asset paths.');
+  const assets = await Promise.all(assetPaths.map(async asset => {
+    const response = await download(`${base}/${asset}`, fetcher);
+    const bytes = Buffer.from(await response.arrayBuffer());
+    if (!bytes.length) throw new Error(`The downloaded asset is empty: ${asset}`);
+    return { path: asset, bytes };
+  }));
+  const metadata = JSON.stringify({ package: packageName, repository, version, ref, commit: release.sha, sha256: hash(css),
+    ...(assets.length ? { assets: Object.fromEntries(assets.map(asset => [asset.path, hash(asset.bytes)])) } : {}),
+  }, null, 2) + '\n';
   // Check every destination before modifying any of them.
   const destinations = [];
   for (const project of projects) {
@@ -44,12 +54,20 @@ export async function updateUI({ version, projects = ['.'], check = false, fetch
         readFile(path.join(dest, 'version.json'), 'utf8'),
       ]);
       if (!actualCss.equals(css) || actualMetadata !== metadata) throw new Error(`UI files differ in ${dest}; run the updater without --check.`);
+      for (const asset of assets) {
+        if (!(await readFile(path.join(dest, asset.path))).equals(asset.bytes)) throw new Error(`UI asset differs: ${asset.path}`);
+      }
       console.log(`OK ${dest} (${ref}, ${release.sha.slice(0, 7)})`);
     }
   } else {
     for (const dest of destinations) {
       await mkdir(dest, { recursive: true });
       await writeFile(path.join(dest, 'ui.css'), css);
+      for (const asset of assets) {
+        const file = path.join(dest, asset.path);
+        await mkdir(path.dirname(file), { recursive: true });
+        await writeFile(file, asset.bytes);
+      }
       await writeFile(path.join(dest, 'version.json'), metadata);
       console.log(`Updated ${dest} (${ref}, ${release.sha.slice(0, 7)})`);
     }

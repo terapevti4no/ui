@@ -1,21 +1,29 @@
 {
   "name": "@terapevti4no/ui",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Shared CSS foundation for terapevti4no tools",
   "type": "module",
   "files": [
-    "styles/ui.css"
+    "styles/ui.css",
+    "assets/"
   ],
   "exports": {
-    "./styles.css": "./styles/ui.css"
+    "./styles.css": "./styles/ui.css",
+    "./logo.svg": "./assets/terapevti4no.svg",
+    "./favicon.svg": "./assets/terapevti4no-favicon.svg"
   },
   "scripts": {
     "test": "node --test scripts/update-ui.test.mjs",
-    "check": "node --check scripts/update-ui.mjs && npm test"
+    "check": "node --check scripts/update-ui.mjs && node scripts/build-assets.mjs --check && npm test",
+    "build:assets": "node scripts/build-assets.mjs"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/terapevti4no/ui.git"
-  }
+  },
+  "uiAssets": [
+    "assets/terapevti4no.svg",
+    "assets/terapevti4no-favicon.svg"
+  ]
 }
