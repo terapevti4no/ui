@@ -29,3 +29,11 @@ test('layout owns one main container and the common information icon/footer', ()
   assert.match(html, /class="ui-note"><svg/);
   assert.match(html, /<footer/);
 });
+
+
+test('Breaze shares the header without borrowing EMDR dots', () => {
+  const html = render(h(Header, { ...preferences, tool: 'breaze' }));
+  assert.match(html, /aria-label="Breaze"/);
+  assert.match(html, /brand-separator/);
+  assert.doesNotMatch(html, /<i>/);
+});

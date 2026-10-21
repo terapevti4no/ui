@@ -26,9 +26,11 @@ export function BrandLogo({ lang, href, className, ...props }: ComponentPropsWit
   </a>;
 }
 
-export function ToolLogo({ name, className }: { name: 'emdrdot'; className?: string }) {
-  return <span className={classes('brand tool-logo', className)} role="img" aria-label={name === 'emdrdot' ? 'EMDR Dot' : name}>
-    <span className="brand-mark" aria-hidden="true"><i/><i/><i/></span><span aria-hidden="true">emdr<span className="brand-dot">dot</span></span>
+export type ToolName = 'emdrdot' | 'breaze';
+
+export function ToolLogo({ name, className }: { name: ToolName; className?: string }) {
+  return <span className={classes('brand tool-logo', className)} role="img" aria-label={name === 'emdrdot' ? 'EMDR Dot' : 'Breaze'}>
+    {name === 'emdrdot' ? <><span className="brand-mark" aria-hidden="true"><i/><i/><i/></span><span aria-hidden="true">emdr<span className="brand-dot">dot</span></span></> : <span aria-hidden="true">breaze</span>}
   </span>;
 }
 
@@ -43,7 +45,7 @@ export function LanguageSwitch({ lang, onChange }: { lang: Lang; onChange: (lang
   </div>;
 }
 
-type HeaderProps = { lang: Lang; theme: Theme; onLanguageChange: (lang: Lang) => void; onThemeChange: (theme: Theme) => void; homeHref?: string; tool?: 'emdrdot'; toolHref?: string };
+type HeaderProps = { lang: Lang; theme: Theme; onLanguageChange: (lang: Lang) => void; onThemeChange: (theme: Theme) => void; homeHref?: string; tool?: ToolName; toolHref?: string };
 export function Header({ lang, theme, onLanguageChange, onThemeChange, homeHref = '/', tool, toolHref = './' }: HeaderProps) {
   return <header className={classes('header', !!tool && 'header-with-tool')}>
     <div className="brand-pair"><BrandLogo lang={lang} href={homeHref}/>{tool && <><span className="brand-separator" aria-hidden="true"/><a href={toolHref}><ToolLogo name={tool}/></a></>}</div>

@@ -15,7 +15,7 @@ React is a peer dependency, so the package shares the application's React instan
 ## Components
 
 - `BrandLogo`: localized parent brand linked to the home page.
-- `ToolLogo`: EMDR Dot wordmark; only this wordmark uses the three dots.
+- `ToolLogo`: EMDR Dot and Breaze wordmarks; only EMDR Dot uses the three dots.
 - `Header`, `ThemeToggle`, `LanguageSwitch`: shared controls and optional parent/tool branding.
 - `PageIntro`: eyebrow, title, description; no decorative divider or dots.
 - `Container`: responsive, narrow or wide content width.
@@ -40,7 +40,7 @@ function Page() {
 }
 ```
 
-For EMDR Dot, pass `tool="emdrdot"` to `PageLayout`. App-specific catalog cards, timer controls, translations and practice behavior belong to their applications.
+Pass `tool="emdrdot"` or `tool="breaze"` to `PageLayout`. App-specific catalog cards, timer controls, translations and practice behavior belong to their applications.
 
 ## Vite integration
 
