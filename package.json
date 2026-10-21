@@ -31,7 +31,8 @@
     "build:assets": "node scripts/build-assets.mjs",
     "build": "npm run build:assets && tsc -p tsconfig.json",
     "test": "node --test scripts/*.test.mjs",
-    "check": "npm run build && node scripts/build-assets.mjs --check && npm test"
+    "check": "npm run build && node scripts/sync-version.mjs --check && node scripts/build-assets.mjs --check && npm test",
+    "version": "node scripts/sync-version.mjs"
   },
   "peerDependencies": {
     "react": "^18.2.0 || ^19.0.0"

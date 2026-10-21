@@ -22,6 +22,16 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - name: Select the next release version
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          version=$(node -p "JSON.parse(require('fs').readFileSync('package.json','utf8')).version")
+          if gh release view "v$version" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            npm version patch --no-git-tag-version
+          fi
       - run: npm run check
       - name: Pack React library
         run: npm pack --json > pack.json
@@ -33,9 +43,12 @@ jobs:
         run: |
           version=$(node -p "JSON.parse(require('fs').readFileSync('package.json','utf8')).version")
           tag="v$version"
-          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
-            echo "Release $tag already exists; bump package.json to release changes."
-            exit 0
+          if ! git diff --quiet -- package.json package-lock.json styles/ui.css; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add package.json package-lock.json styles/ui.css
+            git commit -m "chore: release UI $tag"
+            git push origin HEAD:main
           fi
           archive=$(node -p "JSON.parse(require('fs').readFileSync('pack.json','utf8'))[0].filename")
-          gh release create "$tag" "$archive" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "UI $tag" --generate-notes
+          gh release create "$tag" "$archive" --repo "$GITHUB_REPOSITORY" --target "$(git rev-parse HEAD)" --title "UI $tag" --generate-notes

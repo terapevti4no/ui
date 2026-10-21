@@ -60,9 +60,9 @@ npm pack
 
 `check` compiles JavaScript and TypeScript declarations, generates/checks the favicon, and runs component, preferences and updater tests. For a local preview, install the resulting `.tgz` in a consumer; replace that temporary file dependency with the published URL before committing the consumer.
 
-1. Change components, styles or assets and bump `package.json` version. Keep the stylesheet version comment aligned.
+1. Change components, styles or assets. A normal push automatically increments the patch version if the current version is already released. For an intentional larger version, use `npm version minor --no-git-tag-version`; the version hook aligns the stylesheet comment.
 2. Run `npm run check` and check both sites in both languages/themes and on mobile.
-3. Commit and push to `main`. The workflow builds/tests the package and automatically creates tag/release `vX.Y.Z` with `terapevti4no-ui-X.Y.Z.tgz`. An existing release is never overwritten; a new version is required to publish new changes.
+3. Commit and push to `main`. The workflow builds/tests the package and automatically creates tag/release `vX.Y.Z` with `terapevti4no-ui-X.Y.Z.tgz`. An existing release is never overwritten. The workflow records any automatic version bump in a bot commit before publishing the new release. Bot commits do not trigger an endless release loop.
 4. Consumer workflows check for stable releases four times an hour, install a newer package, run their checks/build, commit the verified lockfile update, then deploy in the same workflow. GitHub may delay scheduled runs. No cross-repository secret or personal token is required.
 
 For an immediate update, run the consumer's **Build and deploy** workflow manually. To stop scheduled updates, set the consumer repository variable `UI_AUTO_UPDATE=false`. Pushes and manual runs still build/deploy normally. To hold a rollback, disable scheduled updates and use an explicit earlier compatible version.
